@@ -62,14 +62,40 @@ def _ocr_available() -> bool:
         return False
 
 
+def _prepare_ocr_image(pil_image):
+    """Upscale small scans, grayscale, and deskew using thresholded foreground."""
+    from PIL import ImageOps, ImageEnhance
+    import numpy as np
+    image = ImageOps.grayscale(pil_image)
+    if min(image.size) < 1100:
+        scale = min(3, 1100 / min(image.size))
+        image = image.resize((int(image.width * scale), int(image.height * scale)))
+    image = ImageEnhance.Contrast(ImageOps.autocontrast(image)).enhance(1.4)
+    # Estimate small orientation errors from foreground projection profile.
+    # Only deskew when meaningful; avoid rotating sparse receipts arbitrarily.
+    arr = np.asarray(image)
+    if np.mean(arr < 175) > 0.008:
+        angles = [-3, -2, -1, 0, 1, 2, 3]
+        scores = []
+        for angle in angles:
+            rot = image.rotate(angle, expand=False, fillcolor=255)
+            projection = (np.asarray(rot) < 160).sum(axis=1)
+            scores.append(float(np.var(projection)))
+        best = angles[int(np.argmax(scores))]
+        if best and max(scores) > scores[3] * 1.08:
+            image = image.rotate(best, expand=False, fillcolor=255)
+    return image
+
+
 def _ocr_page(pil_image) -> Page:
     """OCR a PIL image into a Page with word-level boxes."""
     import pytesseract
 
+    processed = _prepare_ocr_image(pil_image)
     data = pytesseract.image_to_data(
-        pil_image, output_type=pytesseract.Output.DICT
+        processed, output_type=pytesseract.Output.DICT, config="--psm 6", timeout=25
     )
-    w, h = pil_image.size
+    w, h = processed.size
     words: List[Word] = []
     lines: dict = {}
     for i, token in enumerate(data["text"]):
@@ -82,7 +108,7 @@ def _ocr_page(pil_image) -> Page:
         key = (data["block_num"][i], data["par_num"][i], data["line_num"][i])
         lines.setdefault(key, []).append(token)
     text = "\n".join(" ".join(toks) for toks in lines.values())
-    return Page(number=1, text=text, words=words, width=w, height=h, image=pil_image)
+    return Page(number=1, text=text, words=words, width=w, height=h, image=processed)
 
 
 def render_pdf_page(path: str, page_number: int, scale: float = 2.0):
@@ -121,12 +147,15 @@ def _ingest_pdf(path: str) -> IngestedDocument:
                 Page(number=idx, text=text, words=words, width=p.width, height=p.height)
             )
 
-    # Heuristic: fewer than ~30 chars/page of embedded text -> scanned document
-    if pages and total_chars / len(pages) < 30:
+    # OCR pages individually; mixed native/scanned PDFs otherwise lose scanned pages.
+    if pages and any(len(page.text.strip()) < 30 for page in pages):
         if _ocr_available():
             logger.info("PDF %s has no text layer; running OCR", path)
             ocr_pages: List[Page] = []
-            for idx in range(1, len(pages) + 1):
+            for idx, native in enumerate(pages, start=1):
+                if len(native.text.strip()) >= 30:
+                    ocr_pages.append(native)
+                    continue
                 image = render_pdf_page(path, idx)
                 page = _ocr_page(image)
                 page.number = idx
