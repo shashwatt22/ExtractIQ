@@ -149,3 +149,19 @@ The FastAPI service runs on port 8000 (`GET /health`, `POST /api/documents/uploa
 ## Deployment limitations
 
 External Gemini calls are consent-gated, automatically masked on a best-effort basis, and logged with metadata only. This is not complete PII/PHI redaction or a medical document processing compliance program. The API has basic validation and limits, but production deployment would still require authentication, tenant isolation, secure object storage, audit retention, encryption, threat modeling, and security review.
+
+## Latest reproducible development/real-receipt measurements
+
+| Evaluation | Documents | Classification | Extraction |
+|---|---:|---:|---|
+| Diverse **synthetic development** invoices, before bill-number fix | 150 | 100% invoice classification | 93.81% field-level F1 |
+| Same synthetic **development** invoices, after fix | 150 | 100% invoice classification | **98.82% field-level F1** |
+| SROIE **real scanned receipts**, first run | 60 (59 annotated totals) | Not comparable | **27.12%** normalized total exact match (16/59) |
+
+The development improvement fixes support for `Bill Number` labels; it is **not a held-out accuracy gain**. SROIE does not annotate receipt numbers and was not used as the sealed synthetic test. Missing totals (31) were the largest SROIE failure category; 12 totals were incorrect. The 30-document synthetic **sealed holdout has not been scored** during rule tuning.
+
+Development CI: https://github.com/shashwatt22/ExtractIQ/actions/runs/38075547825
+
+Real SROIE receipt evaluation: https://github.com/shashwatt22/ExtractIQ/actions/runs/38075055231
+
+A four-mode Gemini ablation requires a configured API key and external calls; do not misrepresent the classifier-only mode as a field extractor.
