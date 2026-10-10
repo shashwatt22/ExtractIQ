@@ -1,0 +1,26 @@
+name: SROIE disjoint development receipts
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "evaluation/sroie_real_receipts.py"
+      - "backend/app/pipeline/ingest.py"
+      - ".github/workflows/sroie-development.yml"
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - run: pip install -r requirements-lite.txt pytesseract datasets
+      - run: python evaluation/sroie_real_receipts.py --offset 60 --limit 100 --output evaluation/results/sroie_development_100.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sroie-development-100
+          path: evaluation/results/sroie_development_100.json
