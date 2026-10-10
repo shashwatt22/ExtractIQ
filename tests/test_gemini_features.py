@@ -52,3 +52,19 @@ def test_malformed_structured_json():
     with patch.dict(sys.modules, {"google": MagicMock(genai=MagicMock(Client=MagicMock(return_value=client)))}):
         with pytest.raises(json.JSONDecodeError):
             analyze_document("Invoice 5", "structured", "dummy")
+
+
+def test_consent_gate_prevents_external_call(monkeypatch):
+    import frontend.gemini_features as g
+    called=[]
+    monkeypatch.setattr(g,"analyze_document",lambda *a,**k: called.append(True))
+    with pytest.raises(PermissionError):
+        g.analyze_with_consent("invoice","summary","dummy",consent=False)
+    assert called==[]
+
+
+def test_missing_fields_requested_as_not_stated():
+    from frontend.gemini_features import make_prompt
+    prompt=make_prompt("Invoice 10", "structured")
+    assert "Not stated" in prompt
+    assert "Do not invent facts" in prompt
