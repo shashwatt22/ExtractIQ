@@ -87,6 +87,32 @@ def breakdown(records):
             "classification_per_class":class_scores}
 
 
+def failure_taxonomy(records):
+    """Observable error categories, without attributing causes we cannot prove."""
+    failures=[]
+    for row in records:
+        if row.get("expected_doc_type") and row["expected_doc_type"] != row["predicted_doc_type"]:
+            failures.append({"file":row["file"],"category":"classification_mismatch",
+                             "expected":row["expected_doc_type"],"actual":row["predicted_doc_type"]})
+        for name,wanted in row["truth"].items():
+            actual=row["predicted"].get(name)
+            if not actual:
+                reason="missing_field"
+            elif normalized(actual)!=normalized(wanted):
+                reason="value_mismatch"
+            else:
+                continue
+            failures.append({"file":row["file"],"field":name,"category":reason,
+                             "expected":wanted,"actual":actual,
+                             "scanned_pdf":row.get("is_scanned",False)})
+    counts={}
+    for item in failures:
+        key=item["category"]
+        counts[key]=counts.get(key,0)+1
+    return {"counts":counts,"failures":failures,
+            "note":"Categories describe observed symptoms, not verified root causes. OCR failures or hallucinations require separate review."}
+
+
 def run(dataset:Path):
     entries=json.loads((dataset/"manifest.json").read_text(encoding="utf-8"))
     if not isinstance(entries,list) or not entries:
@@ -106,13 +132,15 @@ def run(dataset:Path):
                         "truth":entry["fields"],"predicted":predicted,
                         "expected_doc_type":entry.get("doc_type"),
                         "predicted_doc_type":output["document_type"],
-                        "processing_seconds":seconds})
+                        "processing_seconds":seconds,
+                        "is_scanned":bool(output.get("meta",{}).get("is_scanned",False)),
+                        "ingest_source":output.get("meta",{}).get("ingest_source")})
     score=score_records(records)
     score["documents"]=len(records)
     score["mean_processing_seconds"]=round(sum(x["processing_seconds"] for x in records)/len(records),3)
     typed=[x for x in records if x["expected_doc_type"]]
     score["doc_type_accuracy"]=round(sum(x["expected_doc_type"]==x["predicted_doc_type"] for x in typed)/len(typed),4) if typed else None
-    return {"summary":score, **breakdown(records), "documents":records}
+    return {"summary":score, **breakdown(records), "failure_taxonomy":failure_taxonomy(records), "documents":records}
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
