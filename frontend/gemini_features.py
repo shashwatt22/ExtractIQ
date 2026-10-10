@@ -78,13 +78,9 @@ def analyze_with_consent(document_text: str, task: str, api_key: str, consent: b
 
 
 def redact_basic_pii(document_text: str) -> str:
-    """Mask common contact identifiers; NOT comprehensive clinical PII removal.
-
-    This intentionally does not attempt person-name recognition, addresses,
-    medical record identification or arbitrary account-number detection.
-    """
-    masked = re.sub(r"(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b",
+    """Mask common contact identifiers; not complete PII/PHI removal."""
+    masked = re.sub(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
                     "[REDACTED_EMAIL]", document_text)
-    masked = re.sub(r"(?<![A-Za-z0-9])(?:\\+?\\d[\\d() .-]{8,}\\d)(?![A-Za-z0-9])",
+    masked = re.sub(r"(?<![A-Za-z0-9])(?:\+?\d[\d() .-]{8,}\d)(?![A-Za-z0-9])",
                     "[REDACTED_NUMBER]", masked)
     return masked
