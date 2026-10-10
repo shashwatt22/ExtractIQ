@@ -67,7 +67,7 @@ def make_prompt(document_text: str, task: str) -> str:
 def analyze_document(document_text: str, task: str, api_key: str, model: str = MODEL) -> dict:
     if not api_key or not api_key.strip():
         raise ValueError("Gemini API key is not configured")
-    prompt = make_prompt(document_text, task)
+    # Defense in depth: direct callers cannot bypass default PII masking.\n    prompt = make_prompt(redact_basic_pii(document_text), task)
     from google import genai
 
     client = genai.Client(api_key=api_key, http_options={'timeout': 20000})
