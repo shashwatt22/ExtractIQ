@@ -12,3 +12,19 @@ def test_exact_matching_and_normalization():
 def test_missing():
     got=score_records([{"truth":{"invoice_number":"123"},"predicted":{}}])
     assert got["field_recall"]==0.0
+
+def test_field_breakdown_and_confusion_matrix():
+    from evaluation.real_world_eval import breakdown
+    rows=[
+        {"truth":{"invoice_number":"INV-1","total_amount":"$100.00"},
+         "predicted":{"invoice_number":"INV-1","total_amount":"100.00"},
+         "expected_doc_type":"invoice","predicted_doc_type":"invoice"},
+        {"truth":{"invoice_number":"INV-2","total_amount":"$200.00"},
+         "predicted":{"invoice_number":"NOPE"},
+         "expected_doc_type":"invoice","predicted_doc_type":"other"},
+    ]
+    output=breakdown(rows)
+    assert output["per_field"]["invoice_number"]["exact_matches"]==1
+    assert output["per_field"]["total_amount"]["field_recall"]==0.5
+    assert output["classification_confusion_matrix"]["invoice"]["other"]==1
+    assert output["classification_per_class"]["invoice"]["recall"]==0.5
