@@ -47,3 +47,10 @@ def test_low_confidence_invoice_values_abstain(monkeypatch):
     assert result["fields"]["invoice_number"]["value"]=="not found"
     assert result["fields"]["total_amount"]["value"]=="not found"
     assert result["fields"]["total_amount"]["confidence"]==0.
+
+
+def test_bill_number_is_extracted_from_development_style_invoice():
+    from backend.app.pipeline.extractors.invoice_fallback import supplemental_invoice_fields
+    fields = supplemental_invoice_fields("Bill Number: SI-00042\nGrand Total: INR 1,234.50", set())
+    indexed = {field.name: field.value for field in fields}
+    assert indexed["invoice_number"] == "SI-00042"
