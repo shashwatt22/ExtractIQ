@@ -1,4 +1,4 @@
-"""Document Intelligence — Streamlit frontend.
+"""ExtractIQ — Streamlit application.
 
 Talks to the FastAPI backend over HTTP when one is reachable (local dev,
 Docker). If it isn't — e.g. running standalone on Streamlit Community
@@ -24,8 +24,8 @@ API = os.environ.get("DOCINTEL_API_URL", "http://localhost:8000")
 SAMPLES_DIR = Path(__file__).parent / "samples"
 
 st.set_page_config(
-    page_title="Document Intelligence",
-    page_icon=None,
+    page_title="ExtractIQ | Document Workspace",
+    page_icon="📄",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -118,15 +118,88 @@ st.markdown(
 
 st.markdown(
     """
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+      :root { --iq-ink:#142234; --iq-muted:#617084; --iq-accent:#4358d6; --iq-accent2:#7b6be7; --iq-surface:#ffffff; --iq-border:#e5e9f1; }
+      html, body, [class*="css"] {font-family:'DM Sans',sans-serif!important;}
+      .stApp {background: radial-gradient(circle at 84% 7%,#eff0ff 0,transparent 28%),linear-gradient(180deg,#f7f9fd 0%,#f9fbff 100%);}
+      .block-container {max-width:1180px;padding-top:1.2rem;padding-bottom:3rem;}
+      h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.035em;}
+      .app-header {padding:0;border:0;margin:0 0 1.25rem;}
+      .brand-line {display:flex;align-items:center;gap:.68rem;min-height:54px;margin-bottom:1.25rem;}
+      .brand-mark {display:inline-flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:10px;background:#4358d6;color:#fff;font:800 23px Manrope,sans-serif;box-shadow:0 6px 18px #4358d627;}
+      .brand-dot {color:#acb9ff;}
+      .brand-name {font:800 .94rem Manrope,sans-serif;letter-spacing:.14em;color:#17263e;}
+      .brand-separator {width:1px;height:20px;background:#d8deeb;margin:0 .18rem;}
+      .brand-caption {font:600 .64rem Manrope,sans-serif;letter-spacing:.15em;color:#8792a6;}
+      .hero-grid {display:grid;grid-template-columns: minmax(0,1.6fr) minmax(250px,.83fr);gap:2rem;align-items:center;padding:2rem 2.35rem;border:1px solid #e4e9f7;border-radius:23px;background:linear-gradient(125deg,#fff 5%,#f5f6ff 100%);box-shadow:0 20px 65px #283a5b0b;}
+      .hero-eyebrow {display:flex;align-items:center;gap:.55rem;color:#5164c4;font-size:.68rem;letter-spacing:.17em;font-weight:800;margin-bottom:1rem;}
+      .live-dot {display:inline-block;width:7px;height:7px;border-radius:50%;background:#7b6be7;box-shadow:0 0 0 4px #7b6be71a;}
+      .app-header h1 {font:800 clamp(1.8rem,3.3vw,3.25rem)/1.15 Manrope,sans-serif!important;letter-spacing:-.055em;color:#17263e;margin:0 0 1rem;}
+      .app-header h1 span {color:#4358d6;}
+      .app-header p {font-size:.95rem;max-width:36rem;line-height:1.8;color:#627189;margin:0 0 1.3rem;}
+      .hero-chips {display:flex;flex-wrap:wrap;gap:.5rem;}
+      .hero-chips span {color:#55637f;background:#eef1ff;border:1px solid #e1e6fe;padding:.4rem .65rem;border-radius:7px;font-size:.62rem;font-weight:800;letter-spacing:.055em;}
+      .hero-visual {background:white;border:1px solid #e4e8f4;border-radius:15px;padding:1.1rem;transform:rotate(2deg);box-shadow:0 15px 40px #4653a31c;}
+      .visual-top {display:flex;align-items:center;gap:5px;border-bottom:1px solid #eef0f5;padding-bottom:.9rem;margin-bottom:1.1rem;}
+      .mini-circle {width:7px;height:7px;border-radius:50%;background:#dee3ef;}
+      .mini-circle:first-child {background:#ec97a1;}
+      .visual-name {font-size:.65rem;color:#9aa4b6;margin-left:auto;}
+      .visual-line {height:8px;background:#eef1f8;border-radius:4px;margin:.55rem 0;}
+      .visual-line.wide {width:89%;}.visual-line.short {width:60%;}.visual-line.medium {width:72%;}
+      .visual-field {display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;margin-top:.7rem;padding:.82rem .7rem;background:#f7f8fe;border:1px solid #e9ebfc;border-radius:8px;}
+      .visual-field span {font-size:.54rem;font-weight:800;color:#8a97ae;letter-spacing:.06em;}
+      .visual-field strong {font-size:.74rem;color:#253452;}.visual-field i {font-style:normal;color:#4e63c4;font-size:.65rem;}
+      .visual-footer {border-top:1px solid #edf0f7;margin-top:1rem;padding-top:.9rem;display:flex;justify-content:space-between;color:#97a0b2;font-size:.56rem;letter-spacing:.1em;font-weight:800;}
+      .visual-footer b {color:#18a77a;}
+      .step-strip {gap:.8rem;margin:1rem 0 1.35rem;}
+      .step-item {border:1px solid var(--iq-border);border-radius:13px;background:#fff;padding:1rem 1.1rem;box-shadow:0 4px 18px #283a5b07;}
+      .step-num {background:#eef0ff!important;color:#4559d2!important;}
+      .step-title {color:#253452!important;}.step-desc {color:#728098!important;}
+      .tab-intro {background:#fff;border-left:3px solid #5669da;padding:.8rem 1rem;border-radius:0 8px 8px 0;color:#5b6880;}
+      .meta-strip {background:#eef1ff;color:#465475;border:1px solid #e4e8ff;border-radius:9px;}
+      .answer-card {border:1px solid #e4e8ff;border-left:4px solid #4358d6;background:#fff;border-radius:10px;}
+      .answer-label {color:#4358d6!important;}
+      .source-card,.sample-card {background:#fff;border:1px solid #e4e9f1;border-radius:12px;box-shadow:0 3px 15px #283a5b08;}
+      .sample-title {color:#263652!important;}
+      .pill-high {background:#e3f6ef;color:#167654}.pill-med{background:#fff3d9;color:#94620c}.pill-low{background:#fff0ed;color:#ac4536}
+      table.field-table th{border-bottom:2px solid #e6eaff;color:#64728d;}
+      table.field-table td{border-bottom:1px solid #edf0f8;}
+      div[data-testid="stButton"] button {border-radius:9px;font-weight:600;transition:all .15s ease;}
+      div[data-testid="stButton"] button[kind="primary"] {background-color:#4358d6!important;border-color:#4358d6!important;color:white!important;}
+      div[data-testid="stButton"] button[kind="primary"]:hover {background-color:#3247c6!important;border-color:#3247c6!important;}
+      div[data-testid="stFileUploader"] {border-radius:14px;}
+      div[data-testid="stMetric"] {background:#fff;border:1px solid #e5eaf3;border-radius:12px;padding:1rem;}
+      @media (max-width:850px){.hero-grid{grid-template-columns:1fr;padding:1.4rem;}.hero-visual{display:none}.brand-caption{display:none}.block-container{padding-left:1rem;padding-right:1rem;}}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
     <div class="app-header">
-      <h1>Document Intelligence</h1>
-      <p>Drop in a contract, invoice, financial statement, or court filing and
-      a hybrid pipeline reads it the way a careful paralegal would: it figures
-      out what kind of document this is, pulls out the values that matter,
-      and — instead of asking you to take its word for it — shows you a
-      confidence score and the exact spot on the page each value came from.
-      No account, no setup. If you don't have a document on hand, there are
-      sample files below to try it with.</p>
+      <div class="brand-line"><span class="brand-mark">E<span class="brand-dot">.</span></span>
+      <span class="brand-name">EXTRACTIQ</span><span class="brand-separator"></span>
+      <span class="brand-caption">DOCUMENT WORKSPACE</span></div>
+      <div class="hero-grid">
+        <div>
+          <div class="hero-eyebrow"><span class="live-dot"></span> DOCUMENT ANALYSIS WORKSPACE</div>
+          <h1>Turn documents into<br><span>usable information.</span></h1>
+          <p>Upload a contract, invoice, financial statement, or court filing.
+          ExtractIQ organizes key details, traces them back to the page, and
+          makes your documents easier to search. Try a sample to get started.</p>
+          <div class="hero-chips"><span>PDF CLASSIFICATION</span><span>FIELD EXTRACTION</span><span>DOCUMENT SEARCH</span></div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="visual-top"><span class="mini-circle"></span><span class="mini-circle"></span><span class="mini-circle"></span><span class="visual-name">document_analysis.pdf</span></div>
+          <div class="visual-line wide"></div><div class="visual-line short"></div>
+          <div class="visual-field"><span>DOCUMENT TYPE</span><strong>Invoice</strong><i>97%</i></div>
+          <div class="visual-field"><span>FIELDS FOUND</span><strong>8 extracted</strong><i>✓</i></div>
+          <div class="visual-line medium"></div>
+          <div class="visual-footer">STRUCTURED OUTPUT <b>READY</b></div>
+        </div>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -155,10 +228,8 @@ st.markdown(
 
 if st.session_state["embedded_mode"]:
     st.caption(
-        "This demo instance runs standalone — extraction happens in-process "
-        "the moment you upload rather than as a background job, and stored "
-        "documents reset whenever this instance restarts. Everything else "
-        "is the real pipeline."
+        "Demo mode: files are processed on this server, and uploaded documents "
+        "may be cleared when the app restarts. Avoid uploading sensitive data."
     )
 
 
@@ -204,7 +275,7 @@ def goto(page: str, **prefill) -> None:
 # ────────────────────────────── processing ──────────────────────────────
 
 _PIPELINE_STAGES = [
-    "Reading the document and locating text on the page…",
+    "Reading your document and locating text…",
     "Detecting the document type…",
     "Running layout-aware extraction and the rules engine…",
     "Cross-checking extractors and scoring confidence…",
@@ -314,7 +385,7 @@ def render_result(doc_id: str, meta: dict, show_ask_cta: bool = True) -> None:
             image = Image.open(io.BytesIO(img.content)).convert("RGB")
             draw = ImageDraw.Draw(image)
             w, h = image.size
-            accent = (47, 93, 93)
+            accent = (67, 88, 214)
 
             fields_on_page = [
                 (name, f) for name, f in result["fields"].items()
@@ -549,7 +620,7 @@ elif page == "Ask":
                 )
             r = api("POST", "/api/query", json=payload)
             body = r.json()
-            mode_note = "Answered by Claude from indexed excerpts" if body["answer_mode"] == "llm" \
+            mode_note = "Generated from indexed excerpts" if body["answer_mode"] == "llm" \
                 else "Answered directly from the indexed text"
             st.markdown(
                 f"""<div class="answer-card">
