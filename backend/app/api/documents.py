@@ -39,6 +39,13 @@ async def upload_document(
     if not contents:
         raise HTTPException(400, "Empty file")
 
+    if suffix == ".pdf" and not contents.startswith(b"%PDF-"):
+        raise HTTPException(422, "Invalid PDF signature")
+    if suffix in {".png"} and not contents.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        raise HTTPException(422, "Invalid PNG signature")
+    if suffix in {".jpg", ".jpeg"} and not contents.startswith(b"\\xff\\xd8\\xff"):
+        raise HTTPException(422, "Invalid JPEG signature")
+
     doc_id = uuid.uuid4().hex
     stored = settings.data_dir / "uploads" / f"{doc_id}{suffix}"
     stored.write_bytes(contents)
