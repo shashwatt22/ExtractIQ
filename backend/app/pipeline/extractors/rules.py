@@ -98,6 +98,13 @@ def _extract_invoice(text: str) -> List[ExtractedField]:
     if m:
         out.append(_field("payment_terms", m.group(1), 0.8))
 
+    from .invoice_ranking import ranked_invoice_total
+    ranked = ranked_invoice_total(text)
+    if ranked and ranked.confidence >= 0.78:
+        # Strong grand-total candidates outrank ambiguous plain "Total" labels.
+        rendered = f"{ranked.currency} {ranked.value}" if ranked.currency else ranked.value
+        out = [f for f in out if f.name != "total_amount"]
+        out.append(_field("total_amount", rendered, ranked.confidence))
     from .invoice_fallback import supplemental_invoice_fields
     out.extend(supplemental_invoice_fields(text, {f.name for f in out}))
     return out
