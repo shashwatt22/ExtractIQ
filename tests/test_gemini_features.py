@@ -77,3 +77,22 @@ def test_optional_contact_redaction():
     assert "98765" not in result
     assert "[REDACTED_EMAIL]" in result
     assert "[REDACTED_NUMBER]" in result
+
+
+def test_consented_call_masks_contact_identifiers(monkeypatch, caplog):
+    import frontend.gemini_features as g
+    captured=[]
+    monkeypatch.setattr(g,"analyze_document",lambda text,*a,**k: (captured.append(text) or {"result":"ok"}))
+    output=g.analyze_with_consent("Email john@example.com, phone +91 98765 43210","summary","fake",consent=True)
+    assert output["result"]=="ok"
+    assert "john@example.com" not in captured[0]
+    assert "98765" not in captured[0]
+
+
+def test_consented_call_error_propagates(monkeypatch):
+    import frontend.gemini_features as g
+    def fail(*args,**kwargs):
+        raise RuntimeError("provider down")
+    monkeypatch.setattr(g,"analyze_document",fail)
+    with pytest.raises(RuntimeError,match="provider down"):
+        g.analyze_with_consent("example","summary","fake",consent=True)
