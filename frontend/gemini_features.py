@@ -5,7 +5,7 @@ import json
 import re
 
 MAX_CHARS = 16000
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.5-flash-lite"
 
 def make_prompt(document_text: str, task: str) -> str:
     if task not in {"summary", "structured"}:
@@ -39,13 +39,21 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
         raise ValueError("Gemini API key is not configured")
     prompt = make_prompt(document_text, task)
     from google import genai
+    from google.genai.errors import APIError
 
     client = genai.Client(api_key=api_key)
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-        )
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+        except APIError as exc:
+            code = getattr(exc, "code", "unknown")
+            raise RuntimeError(
+                f"Gemini API returned HTTP {code} for model {model}. "
+                "Check AI Studio model access, quota, and billing for this API project."
+            ) from exc
         output = (response.text or "").strip()
         if not output:
             raise RuntimeError("Gemini returned an empty response")
