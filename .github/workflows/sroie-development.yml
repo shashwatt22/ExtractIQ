@@ -6,6 +6,7 @@ on:
     paths:
       - "evaluation/sroie_real_receipts.py"
       - "backend/app/pipeline/ingest.py"
+      - "backend/app/pipeline/extractors/**"
       - ".github/workflows/sroie-development.yml"
 jobs:
   dev:
