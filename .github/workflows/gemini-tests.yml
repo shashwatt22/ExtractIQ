@@ -18,6 +18,6 @@ jobs:
       - name: Lint changed extraction and API code
         run: |
           python -m pip install ruff
-          ruff check --select E4,E7,E9,F63,F7,F82 frontend/gemini_features.py backend/app/pipeline/extractors/invoice_ranking.py backend/app/api/documents.py evaluation/real_world_eval.py
+          ruff check --select E4,E7,E9,F63,F7,F82 frontend/gemini_features.py backend/app/pipeline/extractors/invoice_ranking.py backend/app/api/documents.py backend/app/rag/qa.py backend/app/security/pii.py evaluation/real_world_eval.py
       - name: Test Gemini feature without API calls
-        run: python -m pytest tests/test_gemini_features.py tests/test_real_world_eval.py tests/test_invoice_ranking.py -q
+        run: python -m pytest tests/test_gemini_features.py tests/test_real_world_eval.py tests/test_invoice_ranking.py tests/test_rag_privacy.py -q
