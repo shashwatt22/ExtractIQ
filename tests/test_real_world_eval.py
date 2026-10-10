@@ -28,3 +28,10 @@ def test_field_breakdown_and_confusion_matrix():
     assert output["per_field"]["total_amount"]["field_recall"]==0.5
     assert output["classification_confusion_matrix"]["invoice"]["other"]==1
     assert output["classification_per_class"]["invoice"]["recall"]==0.5
+
+
+def test_locale_amount_comparison_and_currency_disagreement():
+    from evaluation.real_world_eval import same_field_value
+    assert same_field_value("total_amount","EUR 1.234,50","EUR 1234.50")
+    assert same_field_value("total_amount","₹1,23,456.00","INR 123456.00")
+    assert not same_field_value("total_amount","USD 1234.50","EUR 1234.50")
