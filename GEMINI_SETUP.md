@@ -19,7 +19,7 @@ For local use you can export GEMINI_API_KEY as an environment variable, or use a
 
 ## Implementation and safety
 
-- `frontend/gemini_features.py` calls Google's current `google-genai` Python SDK using `gemini-2.5-flash`.
+- `frontend/gemini_features.py` calls Google's current `google-genai` Python SDK using `gemini-3.5-flash-lite`.
 - Only a user click after a consent checkbox sends document text to the model.
 - Document instructions are treated as untrusted source text; the prompt requests grounded answers and marks missing fields.
 - Only the **first 16,000 extracted characters** are analyzed; a warning appears if truncated.
