@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from decimal import Decimal, InvalidOperation
 import sys
 import time
 from pathlib import Path
