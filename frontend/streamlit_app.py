@@ -595,8 +595,9 @@ elif page == "Review":
                         "I confirm this document is public or synthetic and agree to send its extracted text to Google Gemini.",
                         key=f"ai_consent_{doc_id}",
                     )
+                    mask_contacts = st.checkbox("Mask common email addresses and phone-like numbers before sending (experimental; not full PII redaction)", value=False, key=f"ai_redact_{doc_id}")
                     if st.button("Analyze with Gemini", disabled=not approved, key=f"ai_run_{doc_id}"):
-                        from gemini_features import analyze_with_consent
+                        from gemini_features import analyze_with_consent, redact_basic_pii
                         try:
                             with st.spinner("Generating grounded analysis..."):
                                 text = embedded.document_text_for_ai(doc_id)
