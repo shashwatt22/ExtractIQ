@@ -6,6 +6,7 @@ on:
     paths:
       - "evaluation/generate_diverse_invoices.py"
       - "backend/app/pipeline/extractors/**"
+      - "evaluation/real_world_eval.py"
       - ".github/workflows/invoice-development.yml"
 jobs:
   develop:
