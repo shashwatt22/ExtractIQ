@@ -44,7 +44,7 @@ def score_records(records):
         truth=item["truth"]
         for key,expected in truth.items():
             actual=predicted.get(key)
-            if actual is None or not str(actual).strip():
+            if actual is None or str(actual).strip().casefold() in {"", "not found", "not stated"}:
                 fn+=1
             elif same_field_value(key,actual,expected):
                 tp+=1
@@ -107,7 +107,7 @@ def failure_taxonomy(records):
                              "expected":row["expected_doc_type"],"actual":row["predicted_doc_type"]})
         for name,wanted in row["truth"].items():
             actual=row["predicted"].get(name)
-            if not actual:
+            if actual is None or str(actual).strip().casefold() in {"", "not found", "not stated"}:
                 reason="missing_field"
             elif not same_field_value(name,actual,wanted):
                 reason="value_mismatch"
