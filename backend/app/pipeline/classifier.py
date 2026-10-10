@@ -34,7 +34,7 @@ DOC_TYPES = [
 # keyword -> weight, per document type. Phrases are matched case-insensitively.
 _KEYWORDS: Dict[str, Dict[str, float]] = {
     "invoice": {
-        "invoice": 3.0, "invoice number": 4.0, "invoice no": 4.0, "bill to": 3.0,
+        "invoice": 3.0, "facture": 3.0, "rechnung": 3.0, "factuur": 3.0, "fattura": 3.0, "tax invoice": 4.0, "invoice number": 4.0, "invoice no": 4.0, "bill to": 3.0,
         "due date": 2.0, "payment terms": 1.5, "subtotal": 2.0, "amount due": 3.0,
         "remit to": 2.0, "purchase order": 1.0, "net 30": 1.5, "net 15": 1.5,
         "tax id": 0.5, "quantity": 0.5, "unit price": 1.5,
