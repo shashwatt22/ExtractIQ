@@ -165,3 +165,18 @@ Development CI: https://github.com/shashwatt22/ExtractIQ/actions/runs/3807554782
 Real SROIE receipt evaluation: https://github.com/shashwatt22/ExtractIQ/actions/runs/38075055231
 
 A four-mode Gemini ablation requires a configured API key and external calls; do not misrepresent the classifier-only mode as a field extractor.
+
+## SROIE OCR-preprocessing evaluation (disjoint development and test)
+
+| Real scanned-receipt subset | Before changes | After changes |
+|---|---:|---:|
+| Development: indices 60–159 (100 annotated receipts) | 22/100 = 22.00% | **29/100 = 29.00%** |
+| Fixed test: indices 0–59 (59 annotated totals, 1 unannotated) | 16/59 = 27.12% | **29/59 = 49.15%** |
+
+The original **test baseline** was collected before this work. The new fixed-test result was generated after tuning **exclusively on indices 60–159**. No test sample was used to select parameters or extraction rules. Improvement is **22.03 percentage points** on the fixed test. These are total-field normalized exact-match accuracies, **not** combined invoice-field F1 or production accuracy.
+
+Test failure counts after changes: 21 wrong total, 9 missing total, 1 unannotated. Development after changes: 39 wrong total, 31 missing total, 1 normalization failure.
+
+SROIE does not annotate receipt numbers. The image pipeline uses Tesseract OCR with grayscale/upscaling/contrast/limited deskew, followed by total-keyword ranking. Tests remain limited to 60 scanned receipts; further gains require more diverse receipts and careful independent tests.
+
+[Passing final SROIE test](https://github.com/shashwatt22/ExtractIQ/actions/runs/38076561318) · [Disjoint development](https://github.com/shashwatt22/ExtractIQ/actions/runs/38076342591)
