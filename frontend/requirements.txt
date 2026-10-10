@@ -14,3 +14,4 @@ pypdfium2>=4.28
 pillow>=10.2
 numpy>=1.26
 requests>=2.31
+google-genai>=1.0,<2.0
