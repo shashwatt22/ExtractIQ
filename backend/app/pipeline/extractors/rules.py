@@ -89,7 +89,7 @@ def _extract_invoice(text: str) -> List[ExtractedField]:
         out.append(_field("tax", _clean_money(m.group(1)), 0.85))
 
     m = _search([rf"(?:total\s*(?:amount\s*)?due|amount\s*due|grand\s*total|balance\s*due)\s*[:\-]?\s*({MONEY})",
-                 rf"total\s*[:\-]?\s*({MONEY})"], text)
+                 rf"(?<!sub)\btotal\s*[:\-]?\s*({MONEY})"], text)
     if m:
         out.append(_field("total_amount", _clean_money(m.group(1)), 0.92))
 
@@ -100,7 +100,7 @@ def _extract_invoice(text: str) -> List[ExtractedField]:
 
     from .invoice_ranking import ranked_invoice_total
     ranked = ranked_invoice_total(text)
-    if ranked and ranked.confidence >= 0.78:
+    if ranked and ranked.confidence >= 0.70:
         # Strong grand-total candidates outrank ambiguous plain "Total" labels.
         rendered = f"{ranked.currency} {ranked.value}" if ranked.currency else ranked.value
         out = [f for f in out if f.name != "total_amount"]
