@@ -11,6 +11,7 @@ NUMBER_LABELS = (
     r"invoice\s*(?:no\.?|number|#|nr\.?|id)",
     r"(?:facture|rechnung|factuur|fattura)\s*(?:n[°o.]|nr\.?|number|no\.?)",
     r"(?:invoice|bill|tax invoice)\s*#",
+    r"(?:bill|receipt)\s*(?:number|no\.?|#|id)",
 )
 AMOUNT_LABELS = (
     r"(?:grand\s+total|total\s+(?:amount|due|payable|incl\.?\s*tax|inc\.?\s*vat))",
