@@ -1,0 +1,24 @@
+name: Independent held-out invoice evaluation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - evaluation/fetch_heldout_invoice_test.py
+      - .github/workflows/heldout-benchmark.yml
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-lite.txt
+      - run: python evaluation/fetch_heldout_invoice_test.py
+      - run: python evaluation/real_world_eval.py --dataset evaluation/heldout_invoices --output evaluation/results/heldout_invoices.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heldout-invoice-evaluation
+          path: evaluation/results/heldout_invoices.json
