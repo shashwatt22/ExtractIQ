@@ -7,6 +7,7 @@ on:
       - "evaluation/generate_diverse_invoices.py"
       - "backend/app/pipeline/extractors/**"
       - "evaluation/real_world_eval.py"
+      - "evaluation/ablation.py"
       - ".github/workflows/invoice-development.yml"
 jobs:
   develop:
@@ -22,7 +23,11 @@ jobs:
       - run: python evaluation/generate_diverse_invoices.py --output evaluation/diverse_synthetic
       - name: Score development fixtures only (never sealed holdout)
         run: python evaluation/real_world_eval.py --dataset evaluation/diverse_synthetic/development --output evaluation/dev_invoice_metrics.json
+      - name: Compare deterministic extraction ablations on development only
+        run: python evaluation/ablation.py --dataset evaluation/diverse_synthetic/development --limit 30
       - uses: actions/upload-artifact@v4
         with:
           name: development-invoice-regression
-          path: evaluation/dev_invoice_metrics.json
+          path: |
+            evaluation/dev_invoice_metrics.json
+            evaluation/ablation_development.json
