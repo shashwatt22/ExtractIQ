@@ -71,10 +71,27 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
 
 
 def analyze_with_consent(document_text: str, task: str, api_key: str, consent: bool, **kwargs) -> dict:
-    """Enforce consent at the API boundary, not just in the UI."""
+    """All UI Gemini calls pass through mandatory consent and default masking."""
     if consent is not True:
         raise PermissionError("Explicit consent is required before external AI processing")
-    return analyze_document(document_text, task, api_key, **kwargs)
+    masked = redact_basic_pii(document_text)
+    audit_event(task=task, success=None)
+    try:
+        result = analyze_document(masked, task, api_key, **kwargs)
+    except Exception:
+        audit_event(task=task, success=False)
+        raise
+    audit_event(task=task, success=True)
+    return result
+
+
+def audit_event(task: str, success: bool | None) -> None:
+    """Metadata-only security log: NEVER record prompts or document contents."""
+    import logging
+    logging.getLogger("extractiq.external_ai").info(
+        "provider=gemini task=%s status=%s", task,
+        "attempt" if success is None else ("success" if success else "error"),
+    )
 
 
 def redact_basic_pii(document_text: str) -> str:
