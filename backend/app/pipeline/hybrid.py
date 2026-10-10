@@ -101,7 +101,17 @@ def process_document(path: str) -> dict:
         except Exception as exc:  # extractor bugs must never kill the job
             logger.exception("extractor %s failed: %s", extractor.name, exc)
 
-    fields = merge_fields(candidates)
+    fields = {
+        name: value for name, value in merge_fields(candidates).items()
+        if value.confidence >= 0.60 and str(value.value).strip()
+    }
+    # Prefer explicit uncertainty to a low-confidence guess on key invoice fields.
+    if doc_type in {"invoice", "receipt"}:
+        for required in ("invoice_number", "total_amount"):
+            if required not in fields:
+                fields[required] = ExtractedField(
+                    name=required, value="not found", confidence=0.0, source="not_found"
+                )
     tables = extract_tables(path)
     elapsed = round(time.time() - t0, 2)
 
