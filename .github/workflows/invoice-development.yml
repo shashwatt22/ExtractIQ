@@ -1,0 +1,26 @@
+name: Invoice development-fixture regression
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "evaluation/generate_diverse_invoices.py"
+      - "backend/app/pipeline/extractors/**"
+      - ".github/workflows/invoice-development.yml"
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-lite.txt
+      - run: python evaluation/generate_diverse_invoices.py --output evaluation/diverse_synthetic
+      - name: Score development fixtures only (never sealed holdout)
+        run: python evaluation/real_world_eval.py --dataset evaluation/diverse_synthetic/development --output evaluation/dev_invoice_metrics.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: development-invoice-regression
+          path: evaluation/dev_invoice_metrics.json
