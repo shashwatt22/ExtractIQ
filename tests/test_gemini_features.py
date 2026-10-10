@@ -96,3 +96,22 @@ def test_consented_call_error_propagates(monkeypatch):
     monkeypatch.setattr(g,"analyze_document",fail)
     with pytest.raises(RuntimeError,match="provider down"):
         g.analyze_with_consent("example","summary","fake",consent=True)
+
+
+def test_schema_validated_invoice_only_response():
+    from frontend.gemini_features import analyze_document
+    client=MagicMock()
+    client.models.generate_content.return_value.text=json.dumps({"invoice_number":"INV-25"})
+    with patch.dict(sys.modules,{"google":MagicMock(genai=MagicMock(Client=MagicMock(return_value=client)))}):
+        output=analyze_document("Invoice No: INV-25","invoice_fields","dummy")
+    assert output["result"]["invoice_number"]=="INV-25"
+    assert output["result"]["total_amount"]=="not found"
+
+def test_default_masking_labeled_pii():
+    from frontend.gemini_features import redact_basic_pii
+    source="Customer Name: Alice Example\\nAddress: 12 Main Street\\nPatient ID: XYZ-231\\nPAN ABCDE1234F"
+    result=redact_basic_pii(source.replace("\\n","\n"))
+    assert "Alice Example" not in result
+    assert "12 Main Street" not in result
+    assert "XYZ-231" not in result
+    assert "ABCDE1234F" not in result
