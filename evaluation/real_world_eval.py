@@ -51,6 +51,42 @@ def score_records(records):
             "field_f1":round(f,4),
             "note":"Only annotated field names scored; unannotated output fields ignored."}
 
+def breakdown(records):
+    """Report each annotated field separately, plus a classification confusion matrix."""
+    keys=sorted({key for row in records for key in row["truth"]})
+    per_field={}
+    for key in keys:
+        subset=[{"truth":{key:row["truth"][key]},
+                 "predicted":{key:row["predicted"][key]} if key in row["predicted"] else {}}
+                for row in records if key in row["truth"]]
+        metric=score_records(subset)
+        metric["annotated_samples"]=len(subset)
+        metric["exact_matches"]=sum(
+            str(row["predicted"].get(key,"")).strip()==str(row["truth"][key]).strip()
+            for row in records if key in row["truth"]
+        )
+        per_field[key]=metric
+    matrix={}
+    for row in records:
+        expected=row.get("expected_doc_type")
+        if expected:
+            predicted=row.get("predicted_doc_type","other")
+            matrix.setdefault(expected,{})
+            matrix[expected][predicted]=matrix[expected].get(predicted,0)+1
+    class_scores={}
+    labels=sorted(set(matrix)|{label for x in matrix.values() for label in x})
+    for label in labels:
+        tp=matrix.get(label,{}).get(label,0)
+        fp=sum(matrix.get(other,{}).get(label,0) for other in labels if other!=label)
+        fn=sum(count for other,count in matrix.get(label,{}).items() if other!=label)
+        precision=tp/(tp+fp) if tp+fp else 0
+        recall=tp/(tp+fn) if tp+fn else 0
+        class_scores[label]={"support":sum(matrix.get(label,{}).values()),
+                             "precision":round(precision,4),"recall":round(recall,4)}
+    return {"per_field":per_field,"classification_confusion_matrix":matrix,
+            "classification_per_class":class_scores}
+
+
 def run(dataset:Path):
     entries=json.loads((dataset/"manifest.json").read_text(encoding="utf-8"))
     if not isinstance(entries,list) or not entries:
@@ -76,7 +112,7 @@ def run(dataset:Path):
     score["mean_processing_seconds"]=round(sum(x["processing_seconds"] for x in records)/len(records),3)
     typed=[x for x in records if x["expected_doc_type"]]
     score["doc_type_accuracy"]=round(sum(x["expected_doc_type"]==x["predicted_doc_type"] for x in typed)/len(typed),4) if typed else None
-    return {"summary":score,"documents":records}
+    return {"summary":score, **breakdown(records), "documents":records}
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
