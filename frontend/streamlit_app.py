@@ -578,6 +578,45 @@ elif page == "Review":
         else:
             render_result(doc_id, meta)
 
+            # Opt-in Gemini feature: never calls the model during ordinary extraction.
+            if st.session_state["embedded_mode"]:
+                st.divider()
+                st.subheader("Gemini AI analysis (optional)")
+                st.caption("Sends extracted document text to Google's Gemini API only after you confirm and click Analyze. Do not use private patient or confidential documents.")
+                try:
+                    gemini_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+                except (FileNotFoundError, KeyError):
+                    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+                if not gemini_key:
+                    st.info("Gemini is disabled. Configure GEMINI_API_KEY in Streamlit app secrets.")
+                else:
+                    ai_task = st.radio("Choose AI analysis", ["Summary", "Structured extraction"], horizontal=True, key=f"ai_task_{doc_id}")
+                    approved = st.checkbox(
+                        "I confirm this document is public or synthetic and agree to send its extracted text to Google Gemini.",
+                        key=f"ai_consent_{doc_id}",
+                    )
+                    if st.button("Analyze with Gemini", disabled=not approved, key=f"ai_run_{doc_id}"):
+                        from gemini_features import analyze_document
+                        try:
+                            with st.spinner("Generating grounded analysis..."):
+                                text = embedded.document_text_for_ai(doc_id)
+                                analysis = analyze_document(
+                                    text,
+                                    "summary" if ai_task == "Summary" else "structured",
+                                    gemini_key,
+                                )
+                            if analysis["truncated"]:
+                                st.warning("Only the first 16,000 characters were analyzed. The result may omit later pages.")
+                            st.caption(f"Model: {analysis['model']}. AI-generated output: verify against the source.")
+                            if isinstance(analysis["result"], dict):
+                                st.json(analysis["result"])
+                            else:
+                                st.write(analysis["result"])
+                        except Exception as exc:
+                            st.error(f"Gemini analysis could not complete ({type(exc).__name__}). Your original extraction is unchanged.")
+            else:
+                st.caption("Gemini analysis is available in standalone embedded deployment mode.")
+
 # ──────────────────────────────── Ask ────────────────────────────────
 elif page == "Ask":
     st.markdown(
