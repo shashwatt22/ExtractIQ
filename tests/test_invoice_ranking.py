@@ -24,3 +24,26 @@ def test_rule_integration():
     total=[field for field in fields if field.name=="total_amount"]
     assert len(total)==1
     assert "118.00" in total[0].value
+
+
+def test_low_confidence_invoice_values_abstain(monkeypatch):
+    from types import SimpleNamespace
+    from backend.app.pipeline import hybrid
+    from backend.app.pipeline.extractors.base import ExtractedField
+    doc=SimpleNamespace(full_text="Invoice",is_scanned=False,source="pdf-native",pages=[])
+    class Stub:
+        name="rules"
+        def available(self):
+            return True
+        def extract(self,*args):
+            return [ExtractedField("total_amount","1000",0.4,"rules")]
+    monkeypatch.setattr(hybrid,"ingest",lambda path:doc)
+    monkeypatch.setattr(hybrid,"classify_detailed",lambda text:{
+        "type":"invoice","confidence":1.,"method":"test"
+    })
+    monkeypatch.setattr(hybrid,"_EXTRACTORS",[Stub()])
+    monkeypatch.setattr(hybrid,"extract_tables",lambda path:[])
+    result=hybrid.process_document("mock.pdf")
+    assert result["fields"]["invoice_number"]["value"]=="not found"
+    assert result["fields"]["total_amount"]["value"]=="not found"
+    assert result["fields"]["total_amount"]["confidence"]==0.
