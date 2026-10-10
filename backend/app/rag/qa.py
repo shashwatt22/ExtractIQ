@@ -25,6 +25,7 @@ import re
 from typing import List, Optional
 
 from ..config import settings
+from ..security.pii import redact_basic_pii
 from . import store
 
 logger = logging.getLogger(__name__)
@@ -156,7 +157,9 @@ def _extractive_answer(question: str, hits: List[dict]) -> str:
     return " ".join(top)
 
 
-def _llm_answer(question: str, hits: List[dict]) -> Optional[str]:
+def _llm_answer(question: str, hits: List[dict], consent: bool = False) -> Optional[str]:
+    if consent is not True:
+        return None
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return None
     try:
@@ -165,10 +168,13 @@ def _llm_answer(question: str, hits: List[dict]) -> Optional[str]:
         return None
     try:
         context = "\n\n---\n\n".join(
-            f"[{h['meta'].get('filename', '?')} p.{h['meta'].get('page', '?')}]\n{h['text']}"
-            for h in hits
+            f"[Source page {hit['meta'].get('page', '?')}]\n{hit['text']}"
+            for hit in hits
         )
-        client = anthropic.Anthropic()
+        context = redact_basic_pii(context)
+        safe_question = redact_basic_pii(question)
+        logger.info("provider=anthropic task=rag status=attempt")
+        client = anthropic.Anthropic(timeout=20.0, max_retries=2)
         response = client.messages.create(
             model=settings.llm_model,
             max_tokens=1024,
@@ -180,17 +186,19 @@ def _llm_answer(question: str, hits: List[dict]) -> Optional[str]:
             ),
             messages=[{
                 "role": "user",
-                "content": f"Excerpts:\n\n{context}\n\nQuestion: {question}",
+                "content": f"Excerpts:\n\n{context}\n\nQuestion: {safe_question}",
             }],
         )
         parts = [b.text for b in response.content if b.type == "text"]
+        logger.info("provider=anthropic task=rag status=success")
         return "".join(parts).strip() or None
     except Exception as exc:  # pragma: no cover
-        logger.warning("LLM answer synthesis failed, falling back: %s", exc)
+        logger.warning("provider=anthropic task=rag status=error error_type=%s", type(exc).__name__)
         return None
 
 
-def answer(question: str, top_k: int = 5, document_id: Optional[str] = None) -> dict:
+def answer(question: str, top_k: int = 5, document_id: Optional[str] = None,
+           external_llm_consent: bool = False) -> dict:
     shortcut = _field_shortcut(question, document_id)
     if shortcut is not None:
         return shortcut
@@ -202,7 +210,7 @@ def answer(question: str, top_k: int = 5, document_id: Optional[str] = None) -> 
             "answer_mode": "extractive",
             "sources": [],
         }
-    llm = _llm_answer(question, hits)
+    llm = _llm_answer(question, hits, consent=external_llm_consent)
     if llm is not None:
         mode, text = "llm", llm
     else:
