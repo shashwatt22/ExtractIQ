@@ -1,0 +1,25 @@
+name: Real SROIE receipt evaluation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "evaluation/sroie_real_receipts.py"
+      - ".github/workflows/sroie-real.yml"
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - run: pip install -r requirements-lite.txt pytesseract datasets
+      - run: python evaluation/sroie_real_receipts.py --limit 60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sroie-real-receipts
+          path: evaluation/results/sroie_60.json
