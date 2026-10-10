@@ -30,9 +30,9 @@ def score_total(predicted: str | None, expected: str | None) -> str:
     return "correct" if p == t else "wrong_total"
 
 
-def evaluate(limit: int) -> dict:
+def evaluate(limit: int, offset: int = 0) -> dict:
     from datasets import load_dataset
-    data = load_dataset("jsdnrs/ICDAR2019-SROIE", split=f"train[:{limit}]")
+    data = load_dataset("jsdnrs/ICDAR2019-SROIE", split=f"train[{offset}:{offset + limit}]")
     failures = []
     counts = Counter()
     with tempfile.TemporaryDirectory(prefix="sroie_") as tmp:
@@ -62,6 +62,8 @@ def evaluate(limit: int) -> dict:
     return {
         "source": "SROIE real scanned receipt images, annotated totals only",
         "sampled_rows": len(data),
+        "offset": offset,
+        "partition": "test" if offset == 0 else "development",
         "scored_totals": scored,
         "total_exact_normalized_accuracy": round(counts["correct"] / scored, 4) if scored else None,
         "receipt_number_metric": None,
@@ -74,11 +76,14 @@ def evaluate(limit: int) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=60)
+    parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/sroie_60.json"))
     args = parser.parse_args()
     if not 50 <= args.limit <= 100:
         raise SystemExit("Evaluate between 50 and 100 real receipts")
-    result = evaluate(args.limit)
+    if args.offset < 0:
+        raise SystemExit("Offset must be nonnegative")
+    result = evaluate(args.limit, args.offset)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps({k: v for k, v in result.items() if k != "failures"}, indent=2))
