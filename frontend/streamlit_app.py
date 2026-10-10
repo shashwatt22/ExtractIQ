@@ -596,7 +596,7 @@ elif page == "Review":
                         key=f"ai_consent_{doc_id}",
                     )
                     if st.button("Analyze with Gemini", disabled=not approved, key=f"ai_run_{doc_id}"):
-                        from gemini_features import analyze_document
+                        from gemini_features import analyze_with_consent
                         try:
                             with st.spinner("Generating grounded analysis..."):
                                 text = embedded.document_text_for_ai(doc_id)
