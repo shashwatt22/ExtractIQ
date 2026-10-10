@@ -16,5 +16,6 @@ router = APIRouter(prefix="/api/query", tags=["query"])
 def query_documents(req: QueryRequest, db: Session = Depends(get_db)):
     if req.document_id is not None and db.get(Document, req.document_id) is None:
         raise HTTPException(404, "Document not found")
-    result = qa.answer(req.question, top_k=req.top_k, document_id=req.document_id)
+    result = qa.answer(req.question, top_k=req.top_k, document_id=req.document_id,
+                       external_llm_consent=req.external_llm_consent)
     return QueryResponse(question=req.question, **result)
