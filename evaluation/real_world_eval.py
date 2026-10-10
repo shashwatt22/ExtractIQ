@@ -26,6 +26,17 @@ def normalized(value):
     v=re.sub(r"[$,\s]","",v)
     return v
 
+
+def same_field_value(name, actual, expected):
+    """Currency-aware numeric comparison, otherwise strict normalized text."""
+    if name.lower() in {"total", "total_amount", "subtotal", "tax", "amount"}:
+        from backend.app.pipeline.extractors.invoice_ranking import normalize_amount
+        a, a_currency = normalize_amount(str(actual))
+        e, e_currency = normalize_amount(str(expected))
+        if a is not None and e is not None:
+            return a == e and (not (a_currency and e_currency) or a_currency == e_currency)
+    return normalized(actual) == normalized(expected)
+
 def score_records(records):
     tp=fp=fn=0
     for item in records:
@@ -35,7 +46,7 @@ def score_records(records):
             actual=predicted.get(key)
             if actual is None or not str(actual).strip():
                 fn+=1
-            elif normalized(actual)==normalized(expected):
+            elif same_field_value(key,actual,expected):
                 tp+=1
             else:
                 fp+=1
@@ -98,7 +109,7 @@ def failure_taxonomy(records):
             actual=row["predicted"].get(name)
             if not actual:
                 reason="missing_field"
-            elif normalized(actual)!=normalized(wanted):
+            elif not same_field_value(name,actual,wanted):
                 reason="value_mismatch"
             else:
                 continue
