@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "Dockerfile"
+      - "backend/app/api/documents.py"
+      - "backend/app/pipeline/hybrid.py"
+      - "frontend/streamlit_app.py"
       - "docker-compose.yml"
       - ".github/workflows/docker-smoke.yml"
 jobs:
@@ -18,7 +21,7 @@ jobs:
       - name: Verify API and UI
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8000/health >/dev/null && curl -fsS http://localhost:8501/_stcore/health >/dev/null; then
+            if curl -fsS http://localhost:8000/health >/dev/null && curl -fsS http://localhost:8501/_stcore/health >/dev/null && curl -fsS http://localhost:8000/openapi.json | python -c 'import json,sys; assert "/api/documents/batch" in json.load(sys.stdin)["paths"]'; then
               exit 0
             fi
             sleep 5
