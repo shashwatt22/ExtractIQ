@@ -39,7 +39,6 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
         raise ValueError("Gemini API key is not configured")
     prompt = make_prompt(document_text, task)
     from google import genai
-    from google.genai.errors import APIError
 
     client = genai.Client(api_key=api_key)
     try:
@@ -48,8 +47,10 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
                 model=model,
                 contents=prompt,
             )
-        except APIError as exc:
-            code = getattr(exc, "code", "unknown")
+        except Exception as exc:
+            code = getattr(exc, "code", None)
+            if code is None:
+                raise
             raise RuntimeError(
                 f"Gemini API returned HTTP {code} for model {model}. "
                 "Check AI Studio model access, quota, and billing for this API project."
