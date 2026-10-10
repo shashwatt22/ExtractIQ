@@ -161,4 +161,4 @@ if __name__=="__main__":
     result=run(args.dataset)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(result,indent=2),encoding="utf-8")
-    print(json.dumps(result["summary"],indent=2))
+    print(json.dumps({"summary":result["summary"], "per_field":result["per_field"],\n                      "failure_counts":result["failure_taxonomy"]["counts"]},indent=2))
