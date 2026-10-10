@@ -82,4 +82,4 @@ Advanced OCR and transformer-based extraction require additional dependencies. T
 
 ## License
 
-MIT License. See the `LICENSE` file for copyright and permission terms.
+MIT License.
