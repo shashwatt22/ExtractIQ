@@ -1,0 +1,23 @@
+name: Expanded public invoice evaluation (50 fictional PDFs)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/expanded-invoice-benchmark.yml"
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-lite.txt
+      - run: python evaluation/fetch_heldout_invoice_test.py --count 50
+      - run: python evaluation/real_world_eval.py --dataset evaluation/heldout_invoices --output evaluation/results/expanded_50_invoices.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: expanded-50-invoice-evaluation
+          path: evaluation/results/expanded_50_invoices.json
