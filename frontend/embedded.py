@@ -157,6 +157,24 @@ def _get_document(doc_id: str) -> FakeResponse:
         db.close()
 
 
+def document_text_for_ai(doc_id: str) -> str:
+    """Read an existing uploaded document for opt-in Gemini analysis.
+
+    Available in embedded Streamlit mode only; never sends text externally.
+    """
+    from backend.app.pipeline.ingest import ingest
+    _ensure_db()
+    db = SessionLocal()
+    try:
+        document = db.get(Document, doc_id)
+        if document is None or document.status != "completed":
+            raise ValueError("Document is not available for analysis")
+        path = document.stored_path
+    finally:
+        db.close()
+    return ingest(path).full_text
+
+
 def _get_result(doc_id: str) -> FakeResponse:
     _ensure_db()
     db = SessionLocal()
