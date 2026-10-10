@@ -77,11 +77,26 @@ def make_all(output:Path, count:int=180)->None:
             p.drawString(45,750,"Itemization continued. Total on the preceding page.")
             p.drawString(45,720,"Additional product terms and disclosures.")
         p.save()
+        if i % 12 == 0:
+            # Convert a subset to image-only PDFs to exercise the real OCR path.
+            # Rendering and reconstruction preserve every page of multi-page PDFs.
+            import pypdfium2 as pdfium
+            from reportlab.lib.utils import ImageReader
+            original=pdfium.PdfDocument(str(path))
+            images=[original[j].render(scale=1.5).to_pil().convert("RGB")
+                    for j in range(len(original))]
+            original.close()
+            raster=Canvas(str(path),pagesize=(612,792))
+            for image in images:
+                raster.setPageSize((612,792))
+                raster.drawImage(ImageReader(image),0,0,width=612,height=792)
+                raster.showPage()
+            raster.save()
         manifest[split].append({
             "file":name,"doc_type":"invoice",
             "source_url":f"{SOURCE_TAG}:{name}",
             "fields":{"invoice_number":invoice_number,"total_amount":number},
-            "synthetic":True,"currency":currency_code
+            "synthetic":True,"currency":currency_code, "scanned_fixture":i%12==0
         })
     for segment in manifest:
         (output/segment/"manifest.json").write_text(json.dumps(manifest[segment],indent=2))
