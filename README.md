@@ -94,11 +94,11 @@ flowchart LR
     D --> E[SQLite + document review/search]
     E --> F{User explicitly consents?}
     F -->|No| G[Local analysis only]
-    F -->|Yes| H[Optional contact masking]
+    F -->|Yes| H[Automatic best-effort PII masking]
     H --> I[Gemini API: summary or JSON]
 ```
 
-On Streamlit Community Cloud the app uses the embedded extraction backend. Gemini is **not called during normal document ingestion** and requires an API key, a positive consent check, and a deliberate Analyze click. The optional masking step covers common emails and phone-like numbers only; it does not reliably remove names, addresses, patient identifiers, or every sensitive item.
+On Streamlit Community Cloud the app uses the embedded extraction backend. Gemini is **not called during normal document ingestion** and requires an API key, a positive consent check, and a deliberate Analyze click. The mandatory masking step covers common emails, phone-like numbers, structured IDs, and labeled name/address fields. It is best-effort, not reliable removal of every sensitive identifier.
 
 ### Responsible AI and healthcare readiness
 
@@ -124,3 +124,28 @@ The 50-PDF lightweight deterministic CI run averaged **0.09 seconds per PDF** wi
 ### Next steps
 
 Test 100+ diverse independently annotated real-document examples, audit OCR behavior on scanned PDFs, and benchmark Gemini-only versus rules-only versus hybrid extraction with a separately labeled evaluation. Add robust PHI/PII controls before any sensitive healthcare use.
+
+
+## Docker and cloud deployment (demonstration use only)
+
+```bash
+docker compose up --build
+```
+
+The FastAPI service runs on port 8000 (`GET /health`, `POST /api/documents/upload`, `POST /api/documents/batch`). The Streamlit frontend runs on port 8501. `docker compose` is smoke-tested with both services in [GitHub Actions](https://github.com/shashwatt22/ExtractIQ/actions/workflows/docker-smoke.yml).
+
+**Render:** create a Docker web service pointing at this repository, use the existing `Dockerfile` with `FULL=0`, expose port 8000, set persistent `DOCINTEL_DATA_DIR` and database environment variables, and configure an appropriate persistent disk and TLS endpoint. Streamlit can remain deployed separately.
+
+**AWS:** run the existing container on ECS Fargate or EC2 behind an HTTPS load balancer, use Secrets Manager for external-model keys, CloudWatch for logs and metrics, and a persistent encrypted storage/database service. Do not rely on the ephemeral container filesystem for documents or SQLite state.
+
+**Fly.io:** create a Docker app from this repository, configure a persistent volume for `DOCINTEL_DATA_DIR`, expose port 8000 through TLS, and configure secrets with Fly's secret store.
+
+**Cloud deployment is not performed.** Minimum requirements for an actual deployment: access to a cloud account, preferred region, spending limit, storage/retention policy and authorization to provision services. Never add API secrets to source control.
+
+## New deterministic fixture partition
+
+`python evaluation/generate_diverse_invoices.py` generates 180 **fictional** invoice PDFs with varying layouts, fonts, currencies, date formats, tax/subtotal confusers, and some rasterized scans. The 150-document development partition can be evaluated and used to improve rules; the last 30 PDFs are a **sealed test partition** excluded from development workflows. No accuracy claim is made about this unscored holdout. These fixtures complement, but **do not replace**, diverse independently labeled real-world documents.
+
+## Deployment limitations
+
+External Gemini calls are consent-gated, automatically masked on a best-effort basis, and logged with metadata only. This is not complete PII/PHI redaction or a medical document processing compliance program. The API has basic validation and limits, but production deployment would still require authentication, tenant isolation, secure object storage, audit retention, encryption, threat modeling, and security review.
