@@ -68,3 +68,12 @@ def test_missing_fields_requested_as_not_stated():
     prompt=make_prompt("Invoice 10", "structured")
     assert "Not stated" in prompt
     assert "Do not invent facts" in prompt
+
+
+def test_optional_contact_redaction():
+    from frontend.gemini_features import redact_basic_pii
+    result=redact_basic_pii("Contact jane@example.org or +91 98765 43210")
+    assert "jane@example.org" not in result
+    assert "98765" not in result
+    assert "[REDACTED_EMAIL]" in result
+    assert "[REDACTED_NUMBER]" in result
