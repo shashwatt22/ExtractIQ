@@ -64,6 +64,21 @@ async def upload_document(
     return UploadResponse(id=doc_id, filename=doc.filename, status="queued")
 
 
+@router.post("/batch", response_model=list[UploadResponse], status_code=202)
+async def upload_batch(
+    files: list[UploadFile],
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Queue at most ten documents; validate each using the ordinary endpoint."""
+    if not files or len(files) > 10:
+        raise HTTPException(422, "Upload between 1 and 10 documents")
+    results = []
+    for file in files:
+        results.append(await upload_document(file, background_tasks, db))
+    return results
+
+
 @router.get("", response_model=list[DocumentOut])
 def list_documents(db: Session = Depends(get_db)):
     docs = db.query(Document).order_by(Document.created_at.desc()).all()
