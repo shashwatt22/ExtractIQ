@@ -3,6 +3,21 @@ from __future__ import annotations
 
 import json
 import re
+import time
+
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+
+class StructuredExtraction(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    document_type: str = 'Not stated'
+    parties: str = 'Not stated'
+    reference_number: str = 'Not stated'
+    important_dates: str = 'Not stated'
+    monetary_amounts: str = 'Not stated'
+    key_terms: str = 'Not stated'
+    uncertainties: str = 'Not stated'
+
 
 MAX_CHARS = 16000
 MODEL = "gemini-3.5-flash-lite"
@@ -40,21 +55,25 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
     prompt = make_prompt(document_text, task)
     from google import genai
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options={'timeout': 20000})
     try:
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-            )
-        except Exception as exc:
-            code = getattr(exc, "code", None)
-            if code is None:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+                break
+            except Exception as exc:
+                code = getattr(exc, "code", None)
+                if code in (429, 500, 502, 503, 504) and attempt < 2:
+                    time.sleep(0.25 * (2 ** attempt))
+                    continue
+                if code is not None:
+                    raise RuntimeError(
+                        f"Gemini returned HTTP {code}; check access, quota, and billing."
+                    ) from exc
                 raise
-            raise RuntimeError(
-                f"Gemini API returned HTTP {code} for model {model}. "
-                "Check AI Studio model access, quota, and billing for this API project."
-            ) from exc
         output = (response.text or "").strip()
         if not output:
             raise RuntimeError("Gemini returned an empty response")
@@ -63,6 +82,7 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
             value = json.loads(cleaned)
             if not isinstance(value, dict):
                 raise ValueError("Model returned JSON that was not an object")
+            value = StructuredExtraction.model_validate(value).model_dump()
         else:
             value = output
         return {"result": value, "truncated": len(document_text) > MAX_CHARS, "model": model}
