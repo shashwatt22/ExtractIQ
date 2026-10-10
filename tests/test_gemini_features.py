@@ -115,3 +115,15 @@ def test_default_masking_labeled_pii():
     assert "12 Main Street" not in result
     assert "XYZ-231" not in result
     assert "ABCDE1234F" not in result
+
+
+def test_direct_gemini_call_masks_pii_before_network_request():
+    from gemini_features import analyze_document
+    client = MagicMock()
+    client.models.generate_content.return_value = MagicMock(text="- summary")
+    with patch.dict(sys.modules, {"google": MagicMock(genai=MagicMock(Client=MagicMock(return_value=client)))}):
+        analyze_document("Customer email: jane@example.org\nPhone: +91 98765 43210", "summary", "fake-key")
+    sent = client.models.generate_content.call_args.kwargs["contents"]
+    assert "jane@example.org" not in sent
+    assert "98765 43210" not in sent
+    assert "[REDACTED_EMAIL]" in sent
