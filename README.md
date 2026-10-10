@@ -2,19 +2,19 @@
 
 **Document Intelligence and Information Extraction Platform**
 
-ExtractIQ processes business documents and turns unstructured content into searchable, structured information. It supports invoices, contracts, financial statements, and court filings, making it easier to find relevant details without manually going through entire PDFs.
+ExtractIQ is a document processing application that converts unstructured PDFs into organized, searchable information. It supports invoices, contracts, financial statements, and court filings, helping users extract important details without manually reviewing entire documents.
 
 **[Live Application](https://extractiq-ai.streamlit.app/)**
 
 ## Features
 
-- **Document classification:** Identifies document types using TF-IDF, Logistic Regression, and keyword-based classification.
-- **Information extraction:** Extracts names, dates, amounts, payment terms, and other document-specific fields.
-- **Document search:** Finds relevant information across uploaded documents using TF-IDF retrieval.
-- **Question answering:** Returns relevant excerpts and extracted information from documents.
-- **Table extraction:** Extracts tabular information from supported PDF layouts.
-- **Source highlighting:** Shows where extracted information appears in the original document when location data is available.
-- **Confidence scores:** Provides confidence indicators and extraction-source information.
+- **Document Classification:** Identifies document types using TF-IDF, Logistic Regression, and keyword-based classification.
+- **Information Extraction:** Extracts names, dates, amounts, payment terms, and other relevant fields.
+- **Document Search:** Searches uploaded documents using TF-IDF-based retrieval.
+- **Question Answering:** Retrieves relevant information and text excerpts from uploaded documents.
+- **Table Extraction:** Extracts structured tables from supported PDF layouts.
+- **Source Highlighting:** Highlights extracted information within the original PDF when location data is available.
+- **Confidence Scoring:** Displays confidence indicators and identifies extraction sources.
 
 ## Tech Stack
 
@@ -26,32 +26,32 @@ ExtractIQ processes business documents and turns unstructured content into searc
 | Machine Learning | Scikit-learn, TF-IDF, Logistic Regression |
 | PDF Processing | pdfplumber, pypdfium2 |
 | Database | SQLite |
-| Document Retrieval | TF-IDF, with optional ChromaDB |
+| Document Retrieval | TF-IDF, optional ChromaDB |
 | Deployment | Streamlit Community Cloud |
 
-## How It Works
+## Architecture
 
 ```text
-Document Upload
-      |
-PDF Parsing and Text Extraction
-      |
+PDF Upload
+    |
+Text Extraction & Processing
+    |
 Document Classification
-      |
-Field and Table Extraction
-      |
+    |
+Field & Table Extraction
+    |
 Confidence-Based Result Merging
-      |
-Storage and Document Indexing
-      |
-Search, Results and Source Highlights
+    |
+Storage & Document Indexing
+    |
+Search, Results & Source Highlighting
 ```
 
-The hosted Streamlit version runs the lightweight processing pipeline directly without requiring a separate API server. Advanced OCR and document-understanding models are available as optional components in the full configuration.
+The hosted application uses the lightweight processing pipeline, which runs directly within Streamlit without requiring a separate FastAPI server.
 
-## Run Locally
+## Getting Started
 
-Requires Python 3.10+.
+**Requirements:** Python 3.10+
 
 ```bash
 git clone https://github.com/shashwatt22/extractiq.git
@@ -60,26 +60,26 @@ pip install -r frontend/requirements.txt
 streamlit run frontend/streamlit_app.py
 ```
 
-The application includes sample documents for testing without uploading your own files.
+The application includes sample documents for testing.
 
 ## Project Structure
 
 ```text
-backend/      API, classification, extraction and retrieval
+backend/      APIs, classification, extraction, retrieval
 frontend/     Streamlit application and sample documents
 models/       Saved classifier and evaluation metadata
 training/     Model training scripts
 evaluation/   Evaluation scripts and reports
 tests/        Automated tests
-docs/         Architecture notes and screenshots
+docs/         Architecture documentation
 ```
 
 ## Limitations
 
-The included classifier was evaluated primarily on synthetic documents. Results may vary with scanned PDFs, unfamiliar layouts, and poor-quality inputs. Advanced OCR and transformer-based extraction require additional dependencies.
+The document classifier was evaluated primarily on synthetic data. Extraction accuracy may vary with unfamiliar document layouts, scanned PDFs, and poor-quality inputs.
 
-The application is intended as a document-processing prototype rather than a production system for sensitive information.
+Advanced OCR and transformer-based extraction require additional dependencies. The application is intended for demonstration and experimentation rather than production use with sensitive documents.
 
-## Acknowledgments
+## License
 
-ExtractIQ is an adapted deployment of the open-source [Document Intelligence project](https://github.com/abhati27/document-intelligence). The original implementation is by Anmol Bhatia and is distributed under the MIT License. See `LICENSE` for the original copyright and permission terms.
+MIT License. See the `LICENSE` file for copyright and permission terms.
