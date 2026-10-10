@@ -79,7 +79,3 @@ docs/         Architecture documentation
 The document classifier was evaluated primarily on synthetic data. Extraction accuracy may vary with unfamiliar document layouts, scanned PDFs, and poor-quality inputs.
 
 Advanced OCR and transformer-based extraction require additional dependencies. The application is intended for demonstration and experimentation rather than production use with sensitive documents.
-
-## License
-
-MIT License.
