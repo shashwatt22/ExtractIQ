@@ -8,6 +8,12 @@ import time
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 
+class InvoiceFields(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    invoice_number: str = 'not found'
+    total_amount: str = 'not found'
+
+
 class StructuredExtraction(BaseModel):
     model_config = ConfigDict(extra='ignore')
     document_type: str = 'Not stated'
@@ -23,7 +29,7 @@ MAX_CHARS = 16000
 MODEL = "gemini-3.5-flash-lite"
 
 def make_prompt(document_text: str, task: str) -> str:
-    if task not in {"summary", "structured"}:
+    if task not in {"summary", "structured", "invoice_fields"}:
         raise ValueError("Unsupported analysis task")
     if not document_text or not document_text.strip():
         raise ValueError("No readable document text available")
@@ -39,6 +45,14 @@ def make_prompt(document_text: str, task: str) -> str:
             "main parties, important dates, amounts, and obligations only when explicitly stated. "
             "Finish with 'Missing or uncertain information:' and identify important unknowns. "
             "Do not provide medical, financial, or legal advice."
+        )
+    elif task == "invoice_fields":
+        instruction = (
+            "Extract the invoice number and payable grand total (not subtotal or tax). "
+            "Return ONLY a JSON object with exactly two string keys: "
+            "invoice_number and total_amount. Include the currency if present. "
+            "Use 'not found' for missing or ambiguous fields. "
+            "No guessed values, no markdown fences."
         )
     else:
         instruction = (
@@ -77,12 +91,12 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
         output = (response.text or "").strip()
         if not output:
             raise RuntimeError("Gemini returned an empty response")
-        if task == "structured":
+        if task in {"structured", "invoice_fields"}:
             cleaned = re.sub(r"^\x60\x60\x60(?:json)?\s*|\s*\x60\x60\x60$", "", output).strip()
             value = json.loads(cleaned)
             if not isinstance(value, dict):
                 raise ValueError("Model returned JSON that was not an object")
-            value = StructuredExtraction.model_validate(value).model_dump()
+            value = (InvoiceFields if task == "invoice_fields" else StructuredExtraction).model_validate(value).model_dump()
         else:
             value = output
         return {"result": value, "truncated": len(document_text) > MAX_CHARS, "model": model}
