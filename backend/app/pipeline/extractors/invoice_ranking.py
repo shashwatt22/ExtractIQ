@@ -9,8 +9,8 @@ import re
 
 MONEY = re.compile(r"(?<!\w)(?P<currency>INR|USD|EUR|GBP|₹|\$|€|£)?\s*(?P<number>\d[\d., ]{0,18}\d|\d)(?!\w)", re.I)
 GOOD = re.compile(r"\b(grand\s+total|total\s+(?:amount|due|payable)|amount\s+due|balance\s+due|net\s+payable|invoice\s+total|total\s+incl(?:uding)?\s+(?:vat|tax))\b", re.I)
-GENERIC = re.compile(r"(?<!sub)\btotal\b", re.I)
-BAD = re.compile(r"\b(subtotal|sub\s+total|tax|vat|gst|unit\s+price|discount|shipping|line\s+total|amount\s+paid)\b", re.I)
+GENERIC = re.compile(r"(?<!sub)\b(?:total|amount\s+payable|net\s+sales)\b", re.I)
+BAD = re.compile(r"\b(subtotal|sub\s+total|tax|vat|gst|unit\s+price|discount|shipping|line\s+total|amount\s+paid|cash|change|tendered|rounding)\b", re.I)
 CURRENCY={"₹":"INR","$":"USD","€":"EUR","£":"GBP"}
 
 def normalize_amount(value: str) -> tuple[str | None, str | None]:
@@ -74,7 +74,7 @@ def ranked_invoice_total(text: str) -> RankedAmount | None:
             if "%" in tail[max(0,match.start()-3):match.end()+2]:
                 continue
             distance=match.start()
-            conf=(0.90 if good else 0.66)-min(0.30,distance*0.008)
+            conf=(0.90 if good else 0.78)-min(0.30,distance*0.008)
             if BAD.search(line[:label.start()]):
                 conf-=0.20
             if currency:
