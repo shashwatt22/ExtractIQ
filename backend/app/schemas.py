@@ -56,6 +56,7 @@ class UploadResponse(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=3)
+    external_llm_consent: bool = Field(False, description='Explicit opt-in to masked external RAG synthesis')
     document_id: Optional[str] = None
     top_k: int = Field(5, ge=1, le=20)
 
