@@ -6,6 +6,7 @@ on:
     paths:
       - "evaluation/sroie_real_receipts.py"
       - ".github/workflows/sroie-real.yml"
+      - "backend/app/pipeline/extractors/rules.py"
 jobs:
   evaluate:
     runs-on: ubuntu-latest
