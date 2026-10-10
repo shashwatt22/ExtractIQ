@@ -68,3 +68,10 @@ def analyze_document(document_text: str, task: str, api_key: str, model: str = M
         return {"result": value, "truncated": len(document_text) > MAX_CHARS, "model": model}
     finally:
         client.close()
+
+
+def analyze_with_consent(document_text: str, task: str, api_key: str, consent: bool, **kwargs) -> dict:
+    """Enforce consent at the API boundary, not just in the UI."""
+    if consent is not True:
+        raise PermissionError("Explicit consent is required before external AI processing")
+    return analyze_document(document_text, task, api_key, **kwargs)
